@@ -1,14 +1,2546 @@
+
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8">
-  <title>Análisis de Ventas Retail - Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Retail Analytics | Proyecto Final</title>
+
+    <meta name="description"
+        content="Proyecto final de análisis de ventas: ETL con PySpark, Power BI, DAX y ANOVA.">
+
+    <style>
+        :root {
+            --fondo: #f4f7fc;
+            --blanco: #ffffff;
+            --oscuro: #101d34;
+            --azul: #2563eb;
+            --celeste: #38bdf8;
+            --verde: #059669;
+            --morado: #7c3aed;
+            --texto: #25324a;
+            --secundario: #64748b;
+            --borde: #e1e8f2;
+            --sombra: 0 12px 36px rgba(20, 40, 80, .07);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 85px;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--fondo);
+            color: var(--texto);
+            line-height: 1.7;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        button {
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .contenedor {
+            width: min(1180px, 92%);
+            margin: auto;
+        }
+
+        .seccion {
+            padding: 85px 0;
+        }
+
+        .titulo-seccion {
+            font-size: clamp(1.9rem, 3vw, 2.7rem);
+            color: var(--oscuro);
+            letter-spacing: -1px;
+            line-height: 1.2;
+            margin: 8px 0 15px;
+        }
+
+        .subtitulo {
+            max-width: 850px;
+            color: var(--secundario);
+            font-size: 1.05rem;
+            margin-bottom: 35px;
+        }
+
+        .etiqueta {
+            color: var(--azul);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: .75rem;
+            font-weight: 800;
+        }
+
+        .tarjeta {
+            background: var(--blanco);
+            border: 1px solid var(--borde);
+            border-radius: 18px;
+            padding: 26px;
+            box-shadow: var(--sombra);
+        }
+
+        .tarjeta h3 {
+            color: var(--oscuro);
+            margin: 0 0 12px;
+        }
+
+        .tarjeta p {
+            color: var(--secundario);
+        }
+
+        .rejilla {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .rejilla-dos {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 22px;
+        }
+
+        .rejilla-cuatro {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .boton {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 19px;
+            border-radius: 10px;
+            background: var(--azul);
+            border: 1px solid var(--azul);
+            color: white;
+            font-weight: 700;
+            transition: .2s;
+        }
+
+        .boton:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.08);
+        }
+
+        .boton.secundario {
+            background: transparent;
+            border-color: #8da6cc;
+            color: inherit;
+        }
+
+        /* NAVEGACIÓN */
+
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, .97);
+            border-bottom: 1px solid var(--borde);
+            backdrop-filter: blur(12px);
+        }
+
+        .nav-contenido {
+            min-height: 72px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: var(--oscuro);
+        }
+
+        .logo span {
+            color: var(--azul);
+        }
+
+        .enlaces {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .enlaces a {
+            font-size: .84rem;
+            font-weight: 650;
+            color: #526177;
+        }
+
+        .enlaces a:hover {
+            color: var(--azul);
+        }
+
+        /* PORTADA */
+
+        .hero {
+            color: white;
+            background:
+                radial-gradient(circle at 80% 20%,
+                    rgba(37, 99, 235, .38), transparent 40%),
+                radial-gradient(circle at 10% 90%,
+                    rgba(20, 184, 166, .20), transparent 45%),
+                #0c1830;
+            padding: 105px 0 115px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.3fr .7fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4.6rem);
+            line-height: 1.1;
+            letter-spacing: -2px;
+            margin: 18px 0;
+        }
+
+        .hero h1 span {
+            color: #67dce7;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: #cbd5e1;
+        }
+
+        .hero .etiqueta {
+            color: #67dce7;
+        }
+
+        .hero-acciones {
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .hero-panel {
+            background: rgba(255, 255, 255, .07);
+            border: 1px solid rgba(255, 255, 255, .16);
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .hero-panel h3 {
+            margin-top: 0;
+        }
+
+        .hero-panel p {
+            font-size: .94rem;
+        }
+
+        .tecnologias {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 22px;
+        }
+
+        .tecnologias span {
+            padding: 7px 12px;
+            background: rgba(255, 255, 255, .09);
+            border: 1px solid rgba(255, 255, 255, .15);
+            border-radius: 30px;
+            font-size: .8rem;
+        }
+
+        /* INDICADORES */
+
+        .indicadores {
+            margin-top: -48px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .indicador {
+            background: white;
+            border: 1px solid var(--borde);
+            padding: 25px;
+            border-radius: 17px;
+            box-shadow: var(--sombra);
+        }
+
+        .indicador small {
+            display: block;
+            color: var(--secundario);
+            font-weight: 700;
+        }
+
+        .indicador strong {
+            display: block;
+            font-size: 2rem;
+            color: var(--oscuro);
+            margin: 9px 0;
+            letter-spacing: -1px;
+        }
+
+        .indicador span {
+            font-size: .8rem;
+            color: var(--secundario);
+        }
+
+        /* ETL */
+
+        .flujo {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 13px;
+            margin-top: 30px;
+        }
+
+        .paso {
+            background: white;
+            padding: 22px 17px;
+            border: 1px solid var(--borde);
+            border-radius: 14px;
+        }
+
+        .paso .numero {
+            color: var(--azul);
+            font-size: .78rem;
+            font-weight: 900;
+        }
+
+        .paso h3 {
+            font-size: 1rem;
+            margin: 12px 0;
+            color: var(--oscuro);
+        }
+
+        .paso p {
+            font-size: .84rem;
+            color: var(--secundario);
+            margin: 0;
+        }
+
+        .codigo {
+            background: #101d34;
+            color: #dbeafe;
+            padding: 22px;
+            border-radius: 14px;
+            overflow-x: auto;
+            font-family: Consolas, monospace;
+            font-size: .85rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+        .nota {
+            background: #eef5ff;
+            border-left: 4px solid var(--azul);
+            border-radius: 0 10px 10px 0;
+            padding: 17px 21px;
+            margin-top: 25px;
+            color: #334d73;
+        }
+
+        .nota.advertencia {
+            background: #fff8e8;
+            border-left-color: #e2a43c;
+            color: #76541d;
+        }
+
+        /* GRÁFICOS RESUMIDOS */
+
+        .barra {
+            display: grid;
+            grid-template-columns: 145px 1fr 85px;
+            gap: 12px;
+            align-items: center;
+            margin: 15px 0;
+        }
+
+        .barra span {
+            font-size: .84rem;
+            font-weight: 650;
+        }
+
+        .barra-fondo {
+            height: 14px;
+            background: #e9eff8;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .barra-valor {
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb, #38bdf8);
+            border-radius: 20px;
+        }
+
+        .barra.verde .barra-valor {
+            background: linear-gradient(90deg, #059669, #5eead4);
+        }
+
+        .barra strong {
+            font-size: .8rem;
+            text-align: right;
+        }
+
+        /* REQUERIMIENTOS */
+
+        .requerimiento {
+            border: 1px solid var(--borde);
+            border-radius: 13px;
+            background: white;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .requerimiento summary {
+            cursor: pointer;
+            padding: 17px 20px;
+            font-weight: 750;
+            color: var(--oscuro);
+        }
+
+        .requerimiento summary:hover {
+            background: #f7faff;
+        }
+
+        .requerimiento .contenido {
+            padding: 5px 22px 20px;
+            color: #51627b;
+        }
+
+        .contenido p {
+            margin: 10px 0;
+        }
+
+        .contenido code {
+            background: #eef4fc;
+            padding: 3px 6px;
+            border-radius: 5px;
+            color: #2050a2;
+        }
+
+        /* POWER BI */
+
+        .dashboard {
+            background: white;
+            border: 1px solid var(--borde);
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: var(--sombra);
+        }
+
+        .dashboard iframe {
+            display: block;
+            width: 100%;
+            height: 710px;
+            border: 0;
+            border-radius: 10px;
+            background: #eaf0f8;
+        }
+
+        /* ANOVA */
+
+        .selector-anova {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        .selector-anova button {
+            padding: 11px 17px;
+            border: 1px solid var(--borde);
+            border-radius: 10px;
+            background: white;
+            color: var(--texto);
+            font-weight: 750;
+        }
+
+        .selector-anova button.activo {
+            background: var(--azul);
+            border-color: var(--azul);
+            color: white;
+        }
+
+        .visor-anova {
+            background: white;
+            border: 1px solid var(--borde);
+            border-radius: 18px;
+            padding: 25px;
+        }
+
+        .visor-anova img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .estado {
+            display: inline-block;
+            background: #e8f7ef;
+            color: #087647;
+            font-weight: 750;
+            font-size: .8rem;
+            padding: 6px 12px;
+            border-radius: 30px;
+        }
+
+        .estado.neutro {
+            background: #eef2f7;
+            color: #475569;
+        }
+
+        /* ARCHIVOS */
+
+        .archivo {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            padding: 17px;
+            border-bottom: 1px solid var(--borde);
+        }
+
+        .archivo:last-child {
+            border-bottom: none;
+        }
+
+        .archivo .extension {
+            flex-shrink: 0;
+            background: #e8f0ff;
+            color: #2058c5;
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: .75rem;
+            font-weight: 900;
+            min-width: 54px;
+            text-align: center;
+        }
+
+        .archivo strong {
+            color: var(--oscuro);
+            overflow-wrap: anywhere;
+        }
+
+        .archivo p {
+            margin: 4px 0 0;
+            color: var(--secundario);
+            font-size: .86rem;
+        }
+
+        /* MODO EXPOSICIÓN */
+
+        .guion {
+            display: none;
+            background: #ecfdf5;
+            border-left: 4px solid var(--verde);
+            padding: 18px 20px;
+            border-radius: 0 12px 12px 0;
+            margin-top: 24px;
+        }
+
+        body.modo-exposicion .guion {
+            display: block;
+        }
+
+        .guion strong {
+            color: #065f46;
+        }
+
+        /* PIE DE PÁGINA */
+
+        footer {
+            background: #0c1830;
+            color: #cbd5e1;
+            padding: 45px 0;
+            text-align: center;
+        }
+
+        footer strong {
+            color: white;
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 1050px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .flujo {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .rejilla-cuatro {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .enlaces {
+                gap: 12px;
+            }
+        }
+
+        @media (max-width: 750px) {
+            .rejilla,
+            .rejilla-dos,
+            .flujo {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-contenido {
+                flex-wrap: wrap;
+                padding: 12px 0;
+            }
+
+            .enlaces {
+                overflow-x: auto;
+                width: 100%;
+                flex-wrap: nowrap;
+                padding-bottom: 7px;
+            }
+
+            .hero {
+                padding: 65px 0 100px;
+            }
+
+            .seccion {
+                padding: 60px 0;
+            }
+
+            .barra {
+                grid-template-columns: 110px 1fr 65px;
+                gap: 7px;
+            }
+
+            .dashboard iframe {
+                height: 520px;
+            }
+        }
+
+        @media (max-width: 450px) {
+            .rejilla-cuatro {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
+
 <body>
-  <h1>Análisis de Ventas de un Retail Multinacional</h1>
-  <iframe title="Dashboard de ventas retail"
-          width="100%" height="800"
-          src="https://app.powerbi.com/view?r=eyJrIjoiM2I5ZTQyNTQtMmRjMy00OTIxLTgwZTgtY2FhYjEzYTJlMGRlIiwidCI6IjhkMzY4MzZlLTZiNzUtNGRlNi1iYWI5LTVmNGIxNzc1NDI3ZiIsImMiOjR9"
-          frameborder="0" allowFullScreen="true"></iframe>
+
+    <!-- =========================================
+         BARRA DE NAVEGACIÓN
+    ========================================== -->
+
+    <header class="navbar">
+        <nav class="contenedor nav-contenido">
+
+            <a class="logo" href="#inicio">
+                RETAIL<span>ANALYTICS</span>
+            </a>
+
+            <div class="enlaces">
+                <a href="#proyecto">Proyecto</a>
+                <a href="#etl">ETL</a>
+                <a href="#resultados">Resultados</a>
+                <a href="#powerbi">Power BI</a>
+                <a href="#anova">ANOVA</a>
+                <a href="#archivos">Archivos</a>
+                <a href="#conclusiones">Conclusiones</a>
+            </div>
+
+        </nav>
+    </header>
+
+    <!-- =========================================
+         PORTADA
+    ========================================== -->
+
+    <section class="hero" id="inicio">
+
+        <div class="contenedor hero-grid">
+
+            <div>
+                <span class="etiqueta">
+                    Proyecto final · Herramientas Computacionales
+                </span>
+
+                <h1>
+                    Análisis de Ventas de un
+                    <span>Retail Multinacional</span>
+                </h1>
+
+                <p>
+                    Desarrollo de una solución integral de análisis de datos
+                    mediante un proceso ETL con PySpark, modelado semántico
+                    con DAX, visualización interactiva con Power BI y
+                    análisis estadístico mediante ANOVA.
+                </p>
+
+                <p>
+                    El objetivo es transformar datos históricos de ventas,
+                    clientes y productos en información comprensible para
+                    apoyar decisiones comerciales y estratégicas.
+                </p>
+
+                <div class="hero-acciones">
+                    <a href="#powerbi" class="boton">
+                        Explorar dashboard
+                    </a>
+
+                    <a href="#etl" class="boton secundario">
+                        Conocer el proceso
+                    </a>
+
+                    <button
+                        class="boton secundario"
+                        id="activarExposicion"
+                        type="button">
+                        Activar modo exposición
+                    </button>
+                </div>
+
+                <div class="tecnologias">
+                    <span>Python</span>
+                    <span>PySpark</span>
+                    <span>Pandas</span>
+                    <span>SQLite</span>
+                    <span>JSON</span>
+                    <span>Power BI</span>
+                    <span>DAX</span>
+                    <span>ANOVA</span>
+                </div>
+            </div>
+
+            <div class="hero-panel">
+                <h3>¿Qué construimos?</h3>
+
+                <p>
+                    Un flujo que recibe datos comerciales históricos,
+                    los limpia, los relaciona y genera un modelo analítico.
+                </p>
+
+                <p>
+                    Posteriormente, Power BI presenta los indicadores
+                    empresariales y ANOVA evalúa si existen diferencias
+                    estadísticamente significativas entre grupos.
+                </p>
+
+                <div class="nota"
+                    style="background:rgba(255,255,255,.08);
+                           border-color:#67dce7;
+                           color:#dbeafe">
+                    CSV + JSON + SQLite
+                    <br>↓
+                    <br>ETL con PySpark
+                    <br>↓
+                    <br>Modelo de datos y DAX
+                    <br>↓
+                    <br>Power BI + ANOVA
+                    <br>↓
+                    <br>Conclusiones empresariales
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         INDICADORES DEL PROYECTO
+    ========================================== -->
+
+    <div class="contenedor indicadores">
+
+        <div class="rejilla-cuatro">
+
+            <div class="indicador">
+                <small>Registros originales</small>
+                <strong>2.823</strong>
+                <span>Extraídos del dataset de ventas</span>
+            </div>
+
+            <div class="indicador">
+                <small>Registros finales</small>
+                <strong>2.763</strong>
+                <span>60 líneas Cancelled excluidas</span>
+            </div>
+
+            <div class="indicador">
+                <small>Ventas conservadas</small>
+                <strong>9,84 M</strong>
+                <span>Unidades monetarias del dataset</span>
+            </div>
+
+            <div class="indicador">
+                <small>Cobertura temporal</small>
+                <strong>2003–2005</strong>
+                <span>2005 contiene registros hasta mayo</span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- =========================================
+         DESCRIPCIÓN DEL PROYECTO
+    ========================================== -->
+
+    <section class="seccion" id="proyecto">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">01 / Contexto</span>
+
+            <h2 class="titulo-seccion">
+                ¿Qué problema empresarial resolvemos?
+            </h2>
+
+            <p class="subtitulo">
+                Una empresa multinacional puede acumular grandes cantidades
+                de datos comerciales sin disponer de una visión integrada
+                sobre sus productos, clientes, regiones y resultados.
+                Nuestro proyecto busca transformar esos registros en
+                información útil para la gestión comercial.
+            </p>
+
+            <div class="rejilla">
+
+                <div class="tarjeta">
+                    <h3>Problema identificado</h3>
+                    <p>
+                        Los datos originales contienen información de
+                        transacciones, productos y clientes que debe limpiarse,
+                        organizarse e integrarse para facilitar su análisis.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Solución tecnológica</h3>
+                    <p>
+                        Implementamos un ETL en PySpark para preparar los datos,
+                        un modelo dimensional en Power BI y medidas DAX para
+                        construir indicadores comerciales reutilizables.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Valor empresarial</h3>
+                    <p>
+                        El resultado permite investigar mercados,
+                        identificar clientes estratégicos, comparar
+                        categorías y evaluar diferencias estadísticas
+                        entre grupos antes de tomar decisiones.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="nota">
+                <strong>Fuente del dataset:</strong>
+                Sample Sales Data, disponible públicamente en Kaggle.
+                Los archivos JSON y SQLite del proyecto se prepararon
+                a partir del CSV original para practicar la integración
+                de diferentes formatos.
+            </div>
+
+            <div class="guion">
+                <strong>Qué decir al profesor:</strong>
+                Partimos de un dataset abierto con ventas históricas
+                y construimos un flujo completo desde su preparación
+                hasta su análisis comercial y estadístico.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         PROCESO ETL
+    ========================================== -->
+
+    <section class="seccion" id="etl">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">02 / Ingeniería de datos</span>
+
+            <h2 class="titulo-seccion">
+                Nuestro proceso ETL con PySpark
+            </h2>
+
+            <p class="subtitulo">
+                ETL significa Extract, Transform y Load:
+                extraer, transformar y cargar.
+                En nuestro proyecto incorporamos también controles
+                de calidad y auditoría para verificar los resultados.
+            </p>
+
+            <div class="flujo">
+
+                <div class="paso">
+                    <span class="numero">ETAPA 01</span>
+                    <h3>Preparación de fuentes</h3>
+                    <p>
+                        A partir del CSV original generamos un archivo JSON
+                        de productos y una base SQLite de clientes.
+                    </p>
+                </div>
+
+                <div class="paso">
+                    <span class="numero">ETAPA 02</span>
+                    <h3>EXTRACT</h3>
+                    <p>
+                        PySpark lee las ventas del CSV y los productos
+                        desde JSON. Los clientes se consultan desde SQLite
+                        utilizando pandas.
+                    </p>
+                </div>
+
+                <div class="paso">
+                    <span class="numero">ETAPA 03</span>
+                    <h3>TRANSFORM</h3>
+                    <p>
+                        Normalizamos textos, eliminamos duplicados,
+                        filtramos líneas canceladas, convertimos fechas
+                        y calculamos atributos financieros.
+                    </p>
+                </div>
+
+                <div class="paso">
+                    <span class="numero">ETAPA 04</span>
+                    <h3>VALIDACIONES</h3>
+                    <p>
+                        Comprobamos cantidades de filas, fechas nulas,
+                        correspondencia de clientes y productos,
+                        e indicadores de calidad.
+                    </p>
+                </div>
+
+                <div class="paso">
+                    <span class="numero">ETAPA 05</span>
+                    <h3>LOAD</h3>
+                    <p>
+                        Exportamos el dataset limpio en Parquet y CSV,
+                        junto con dimensiones y un reporte de auditoría.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="rejilla-dos">
+
+                <div class="tarjeta">
+                    <h3>Las tres fuentes del proyecto</h3>
+
+                    <p>
+                        <strong>CSV:</strong> contiene los registros de
+                        ventas originales, con importes, cantidades,
+                        fechas, pedidos y referencias de clientes
+                        y productos.
+                    </p>
+
+                    <p>
+                        <strong>JSON:</strong> contiene el catálogo de
+                        productos, incluyendo código, línea comercial
+                        y precio sugerido MSRP.
+                    </p>
+
+                    <p>
+                        <strong>SQLite:</strong> almacena la información
+                        descriptiva de clientes, como nombre,
+                        ciudad, país y territorio.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Reglas de transformación</h3>
+
+                    <p>
+                        Se eliminan registros duplicados según
+                        las claves de negocio, se normalizan
+                        nombres y valores nulos, y se excluyen
+                        las líneas con estado <code>Cancelled</code>.
+                    </p>
+
+                    <p>
+                        También se convierten fechas a un tipo válido
+                        y se integran las entidades por
+                        <code>PRODUCTCODE</code> y
+                        <code>CUSTOMERNAME</code>.
+                    </p>
+
+                    <p>
+                        Finalmente se crean costo total,
+                        utilidad estimada, descuento estimado
+                        y columnas temporales.
+                    </p>
+                </div>
+
+            </div>
+
+            <h3 style="margin-top:35px">
+                Ejemplo de transformación con PySpark
+            </h3>
+
+            <pre class="codigo"><code>df_ventas = (
+    df_ventas
+    .dropDuplicates(["ORDERNUMBER", "ORDERLINENUMBER"])
+    .withColumn(
+        "CUSTOMERNAME",
+        F.trim(F.col("CUSTOMERNAME"))
+    )
+    .filter(~F.col("STATUS").isin(ESTADOS_EXCLUIDOS))
+    .filter(F.col("SALES").isNotNull() & (F.col("SALES") > 0))
+    .filter(F.col("QUANTITYORDERED") > 0)
+)</code></pre>
+
+            <p>
+                Este fragmento representa una parte de la limpieza de ventas.
+                La deduplicación conserva una fila por combinación de pedido
+                y número de línea, mientras que los filtros retiran registros
+                que incumplen las reglas comerciales establecidas.
+            </p>
+
+            <div class="nota advertencia">
+                <strong>Precisión importante:</strong>
+                eliminar las operaciones Cancelled no significa
+                conservar exclusivamente pedidos entregados.
+                El dataset todavía puede contener otros estados,
+                como In Process, On Hold o Disputed.
+            </div>
+
+            <div class="guion">
+                <strong>Qué decir al profesor:</strong>
+                La importancia del ETL es que permite preparar
+                información consistente antes del análisis.
+                Sin este proceso, los errores en las fuentes
+                podrían afectar los indicadores de Power BI.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         MODELO SEMÁNTICO
+    ========================================== -->
+
+    <section class="seccion" id="modelo">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">03 / Modelo de datos</span>
+
+            <h2 class="titulo-seccion">
+                Integración y modelo en estrella
+            </h2>
+
+            <p class="subtitulo">
+                Organizamos la información alrededor de una tabla
+                principal de ventas y varias dimensiones descriptivas.
+                Esto permite analizar las transacciones por productos,
+                clientes y períodos.
+            </p>
+
+            <div class="rejilla">
+
+                <div class="tarjeta">
+                    <h3>fact_ventas</h3>
+                    <p>
+                        Tabla central de hechos.
+                        Contiene importes, cantidades,
+                        costos estimados, utilidad y referencias
+                        a productos y clientes.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>dim_producto y dim_cliente</h3>
+                    <p>
+                        Contienen la información descriptiva
+                        que permite agrupar las ventas según
+                        categoría, cliente, ciudad, país o región.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>dim_fecha</h3>
+                    <p>
+                        Permite construir análisis por mes,
+                        trimestre y año, así como medidas
+                        de variación temporal mediante DAX.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="nota advertencia">
+                <strong>Verificación técnica pendiente:</strong>
+                la inspección previa de Final.pbix con PBIXRay identificó
+                las relaciones activas de productos y clientes,
+                pero no la de fechas.
+                Antes de exponer los indicadores temporales,
+                se debe confirmar que dim_fecha[Date]
+                esté relacionada con fact_ventas[FECHA].
+            </div>
+
+            <div class="guion">
+                <strong>Qué decir al profesor:</strong>
+                El modelo en estrella separa los hechos
+                comerciales de sus dimensiones descriptivas.
+                Esto facilita reutilizar medidas DAX
+                y analizar la misma información desde
+                diferentes perspectivas.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         RESULTADOS DE NEGOCIO
+    ========================================== -->
+
+    <section class="seccion" id="resultados">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">04 / Resultados</span>
+
+            <h2 class="titulo-seccion">
+                ¿Qué encontramos en los datos?
+            </h2>
+
+            <p class="subtitulo">
+                Los resultados permiten identificar categorías
+                comerciales destacadas, concentración geográfica
+                de ingresos y cambios en las ventas durante
+                el período estudiado.
+            </p>
+
+            <div class="rejilla-dos">
+
+                <div class="tarjeta">
+                    <h3>Ventas por categoría</h3>
+
+                    <div class="barra">
+                        <span>Classic Cars</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:100%"></div>
+                        </div>
+                        <strong>3,85 M</strong>
+                    </div>
+
+                    <div class="barra">
+                        <span>Vintage Cars</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:48.4%"></div>
+                        </div>
+                        <strong>1,87 M</strong>
+                    </div>
+
+                    <div class="barra">
+                        <span>Motorcycles</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:30.3%"></div>
+                        </div>
+                        <strong>1,17 M</strong>
+                    </div>
+
+                    <div class="barra">
+                        <span>Trucks &amp; Buses</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:29.3%"></div>
+                        </div>
+                        <strong>1,13 M</strong>
+                    </div>
+
+                    <p>
+                        <strong>Interpretación:</strong>
+                        Classic Cars concentra una parte importante
+                        de la facturación. Sin embargo, para
+                        recomendar inversiones debemos revisar también
+                        los costos, los márgenes y la demanda.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Principales países</h3>
+
+                    <div class="barra verde">
+                        <span>United States</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:100%"></div>
+                        </div>
+                        <strong>3,58 M</strong>
+                    </div>
+
+                    <div class="barra verde">
+                        <span>Spain</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:32.5%"></div>
+                        </div>
+                        <strong>1,17 M</strong>
+                    </div>
+
+                    <div class="barra verde">
+                        <span>France</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:31%"></div>
+                        </div>
+                        <strong>1,11 M</strong>
+                    </div>
+
+                    <div class="barra verde">
+                        <span>Australia</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:17.6%"></div>
+                        </div>
+                        <strong>0,63 M</strong>
+                    </div>
+
+                    <p>
+                        <strong>Interpretación:</strong>
+                        Estados Unidos representa aproximadamente
+                        el 36,4 % de las ventas conservadas,
+                        lo que muestra una concentración comercial
+                        relevante en ese mercado.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="rejilla-dos" style="margin-top:22px">
+
+                <div class="tarjeta">
+                    <h3>Evolución de ventas anuales</h3>
+
+                    <div class="barra">
+                        <span>2003</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:75.8%"></div>
+                        </div>
+                        <strong>3,47 M</strong>
+                    </div>
+
+                    <div class="barra">
+                        <span>2004</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:100%"></div>
+                        </div>
+                        <strong>4,58 M</strong>
+                    </div>
+
+                    <div class="barra">
+                        <span>2005*</span>
+                        <div class="barra-fondo">
+                            <div class="barra-valor" style="width:39.1%"></div>
+                        </div>
+                        <strong>1,79 M</strong>
+                    </div>
+
+                    <p>
+                        De 2003 a 2004 las ventas aumentaron
+                        aproximadamente un 32 %.
+                    </p>
+
+                    <p>
+                        Comparando enero–mayo de 2005 con
+                        el mismo período de 2004,
+                        el crecimiento fue aproximadamente 41,3 %.
+                    </p>
+
+                    <small>*2005 contiene datos solamente hasta mayo.</small>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Rentabilidad estimada</h3>
+
+                    <h2 style="color:var(--verde)">3,96 M</h2>
+
+                    <p>
+                        Utilidad agregada estimada bajo
+                        la regla de costo del proyecto.
+                    </p>
+
+                    <p>
+                        Classic Cars aporta la mayor utilidad
+                        estimada acumulada.
+                    </p>
+
+                    <p>
+                        Trains presenta un margen porcentual
+                        estimado relativamente elevado,
+                        aunque sus ingresos y su utilidad total
+                        son menores.
+                    </p>
+
+                    <div class="nota advertencia">
+                        Los costos no proceden de información
+                        contable real. El proyecto utiliza
+                        COSTO_UNIT = MSRP × 0,60.
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="guion">
+                <strong>Qué decir al profesor:</strong>
+                Encontramos concentración de ingresos en determinadas
+                categorías, clientes y países. También observamos
+                crecimiento entre períodos comparables, pero
+                debemos diferenciar los ingresos reales registrados
+                de las utilidades calculadas mediante supuestos.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         REQUERIMIENTOS ANALÍTICOS
+    ========================================== -->
+
+    <section class="seccion" id="requerimientos">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">05 / Requerimientos</span>
+
+            <h2 class="titulo-seccion">
+                Los diez análisis solicitados
+            </h2>
+
+            <p class="subtitulo">
+                Cada requerimiento responde a una pregunta de negocio
+                utilizando las dimensiones, medidas DAX y visualizaciones
+                construidas en Power BI.
+            </p>
+
+            <div class="rejilla-dos">
+
+                <div>
+
+                    <details class="requerimiento" open>
+                        <summary>01. Ventas mensuales por país</summary>
+                        <div class="contenido">
+                            <p>
+                                <strong>Pregunta:</strong>
+                                ¿Qué países generan más ingresos
+                                y cómo evolucionan sus ventas?
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Ventas_Totales</code>
+                            </p>
+                            <p>
+                                <strong>Visualización:</strong>
+                                matriz y gráfico de líneas.
+                            </p>
+                            <p>
+                                <strong>Decisión:</strong>
+                                investigar mercados estratégicos
+                                y planificar recursos por región.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="requerimiento">
+                        <summary>02. Rentabilidad por categoría</summary>
+                        <div class="contenido">
+                            <p>
+                                Compara utilidad estimada y margen
+                                de las categorías comerciales.
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Utility</code>,
+                                <code>Margen %</code>.
+                            </p>
+                            <p>
+                                <strong>Decisión:</strong>
+                                evaluar prioridades comerciales
+                                considerando utilidad y demanda.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="requerimiento">
+                        <summary>03. Clientes con mayores ingresos</summary>
+                        <div class="contenido">
+                            <p>
+                                Identifica los diez clientes
+                                que más facturación acumulan.
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Ventas_Totales</code>.
+                            </p>
+                            <p>
+                                <strong>Decisión:</strong>
+                                diseñar estrategias de fidelización
+                                y gestionar la concentración de ingresos.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="requerimiento">
+                        <summary>04. Comparativa año a año</summary>
+                        <div class="contenido">
+                            <p>
+                                Compara ingresos de un período
+                                con su equivalente del año anterior.
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Ventas Año Anterior Comparable</code>
+                                y <code>Variación YoY Comparable %</code>.
+                            </p>
+                            <p>
+                                <strong>Decisión:</strong>
+                                evaluar crecimiento sin comparar
+                                incorrectamente años parciales.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="requerimiento">
+                        <summary>05. Crecimiento mensual</summary>
+                        <div class="contenido">
+                            <p>
+                                Estudia el cambio porcentual
+                                de las ventas frente al mes anterior.
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Ventas Mes Anterior</code>
+                                y <code>Crecimiento Mensual %</code>.
+                            </p>
+                            <p>
+                                <strong>Decisión:</strong>
+                                identificar meses de expansión
+                                o disminución de ventas.
+                            </p>
+                        </div>
+                    </details>
+
+                </div>
+
+                <div>
+
+                    <details class="requerimiento">
+                        <summary>06. Promedio de ventas por región</summary>
+                        <div class="contenido">
+                            <p>
+                                Compara el ticket por pedido
+                                y el promedio de ventas por línea.
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Ticket Promedio por Pedido</code>
+                                y <code>Promedio Venta por Línea</code>.
+                            </p>
+                            <p>
+                                <strong>Decisión:</strong>
+                                estudiar diferencias regionales
+                                sin confundir ambas métricas.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="requerimiento">
+                        <summary>07. Productos más vendidos</summary>
+                        <div class="contenido">
+                            <p>
+                                Identifica productos con mayor cantidad
+                                pedida según Small, Medium o Large.
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Unidades Vendidas</code>.
+                            </p>
+                            <p>
+                                <strong>Nota:</strong>
+                                DEALSIZE no identifica un canal
+                                de distribución real.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="requerimiento">
+                        <summary>08. Mapa geográfico</summary>
+                        <div class="contenido">
+                            <p>
+                                Representa los ingresos
+                                acumulados según país.
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Ventas_Totales</code>.
+                            </p>
+                            <p>
+                                <strong>Decisión:</strong>
+                                reconocer concentración de ingresos
+                                y mercados relevantes.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="requerimiento">
+                        <summary>09. Descuentos y volumen</summary>
+                        <div class="contenido">
+                            <p>
+                                Compara cantidades medias entre
+                                rangos de descuento estimado.
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Rango Descuento</code>,
+                                <code>Cantidad Promedio por Línea</code>.
+                            </p>
+                            <p>
+                                <strong>Decisión:</strong>
+                                investigar la relación entre precios
+                                y cantidad, sin afirmar causalidad.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="requerimiento">
+                        <summary>10. Clasificación ABC de clientes</summary>
+                        <div class="contenido">
+                            <p>
+                                Clasifica clientes según
+                                su contribución acumulada a las ventas.
+                            </p>
+                            <p>
+                                <strong>DAX:</strong>
+                                <code>Ventas Acumuladas</code>,
+                                <code>% Acumulado</code>,
+                                <code>Clase ABC</code>.
+                            </p>
+                            <p>
+                                <strong>Decisión:</strong>
+                                priorizar seguimiento y estrategias
+                                de retención según importancia comercial.
+                            </p>
+                        </div>
+                    </details>
+
+                </div>
+
+            </div>
+
+            <div class="guion">
+                <strong>Qué decir al profesor:</strong>
+                Utilizamos un mismo modelo de datos para
+                resolver diez preguntas empresariales.
+                Las medidas DAX se reutilizan en distintos gráficos,
+                mientras que las dimensiones permiten cambiar
+                la perspectiva del análisis.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         DAX
+    ========================================== -->
+
+    <section class="seccion" id="dax">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">06 / Modelado semántico</span>
+
+            <h2 class="titulo-seccion">
+                ¿Qué hace DAX en nuestro Power BI?
+            </h2>
+
+            <p class="subtitulo">
+                DAX es el lenguaje de expresiones que utilizamos
+                para crear medidas de ventas, rentabilidad,
+                promedios, crecimiento temporal y clasificación
+                de clientes.
+            </p>
+
+            <div class="rejilla-dos">
+
+                <div class="tarjeta">
+                    <h3>Medidas DAX principales</h3>
+
+                    <pre class="codigo"><code>Ventas_Totales =
+SUM(fact_ventas[SALES])
+
+Utility =
+SUM(fact_ventas[UTILIDAD])
+
+Margen % =
+DIVIDE(
+    [Utility],
+    [Ventas_Totales]
+)
+
+Pedidos =
+DISTINCTCOUNT(fact_ventas[ORDERNUMBER])
+
+Ticket Promedio por Pedido =
+DIVIDE(
+    [Ventas_Totales],
+    [Pedidos]
+)</code></pre>
+
+                    <p>
+                        Estas medidas se calculan según los
+                        filtros aplicados en Power BI.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Consulta DAX de verificación</h3>
+
+                    <pre class="codigo"><code>EVALUATE
+SUMMARIZECOLUMNS(
+    dim_producto[CATEGORIA],
+    "Ventas", [Ventas_Totales],
+    "Utilidad", [Utility],
+    "Margen", [Margen %]
+)
+ORDER BY
+    [Utilidad] DESC</code></pre>
+
+                    <p>
+                        Esta consulta devuelve una tabla
+                        que resume ventas, utilidad estimada
+                        y margen por categoría.
+                    </p>
+
+                    <p>
+                        Una medida DAX define un cálculo
+                        reutilizable; una consulta DAX
+                        permite recuperar resultados tabulares.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="nota">
+                <strong>Herramienta complementaria:</strong>
+                consultaPower.py utiliza PBIXRay para inspeccionar
+                las tablas, relaciones, medidas DAX y consultas
+                Power Query almacenadas en el PBIX.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         DASHBOARD POWER BI
+    ========================================== -->
+
+    <section class="seccion" id="powerbi">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">07 / Visualización empresarial</span>
+
+            <h2 class="titulo-seccion">
+                Dashboard interactivo de Power BI
+            </h2>
+
+            <p class="subtitulo">
+                En esta sección se presenta el informe desarrollado
+                para responder los diez requerimientos analíticos.
+                Puedes interactuar con las páginas y explorar
+                sus indicadores, gráficos, tablas y mapas.
+            </p>
+
+            <div class="dashboard">
+
+                <iframe
+                    title="Dashboard de Ventas Retail Multinacional"
+                    src="https://app.powerbi.com/view?r=eyJrIjoiM2I5ZTQyNTQtMmRjMy00OTIxLTgwZTgtY2FhYjEzYTJlMGRlIiwidCI6IjhkMzY4MzZlLTZiNzUtNGRlNi1iYWI5LTVmNGIxNzc1NDI3ZiIsImMiOjR9"
+                    allowfullscreen
+                    loading="lazy">
+                </iframe>
+
+            </div>
+
+            <div class="nota">
+                <strong>Nota:</strong>
+                para visualizar el dashboard incrustado,
+                necesitas conexión a Internet y que
+                la publicación de Power BI siga activa.
+            </div>
+
+            <div class="guion">
+                <strong>Qué decir al profesor:</strong>
+                Esta es la capa de visualización.
+                Aquí se utilizan los resultados del ETL,
+                las relaciones del modelo y las medidas DAX
+                para explorar el desempeño comercial.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         ANOVA
+    ========================================== -->
+
+    <section class="seccion" id="anova">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">08 / Estadística inferencial</span>
+
+            <h2 class="titulo-seccion">
+                Análisis de Varianza: ANOVA
+            </h2>
+
+            <p class="subtitulo">
+                ANOVA permite evaluar si existen diferencias
+                estadísticamente significativas entre
+                los promedios de varios grupos.
+                Lo utilizamos para complementar los resultados
+                descriptivos de Power BI.
+            </p>
+
+            <div class="rejilla">
+
+                <div class="tarjeta">
+                    <h3>¿Qué comparamos?</h3>
+                    <p>
+                        Ventas promedio entre categorías,
+                        ventas promedio entre regiones
+                        y cantidades medias entre rangos
+                        de descuento estimado.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>¿Cómo funciona?</h3>
+                    <p>
+                        Compara las diferencias entre los promedios
+                        de los grupos con la variabilidad
+                        existente dentro de ellos.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>¿Qué criterio usamos?</h3>
+                    <p>
+                        Un nivel de significancia de 0,05.
+                        Un valor p inferior indica evidencia
+                        estadística contra la igualdad
+                        de las medias.
+                    </p>
+                </div>
+
+            </div>
+
+            <h3 style="margin-top:45px">
+                Explora los cinco análisis realizados
+            </h3>
+
+            <p>
+                Selecciona un análisis para observar
+                su diagrama de cajas y su Q-Q plot de residuos,
+                junto con la interpretación estadística
+                y su utilidad empresarial.
+            </p>
+
+            <div class="selector-anova">
+
+                <button class="activo" data-anova="0">
+                    A1 · Categorías
+                </button>
+
+                <button data-anova="1">
+                    A1b · Log categorías
+                </button>
+
+                <button data-anova="2">
+                    A2 · Regiones
+                </button>
+
+                <button data-anova="3">
+                    A2b · Log regiones
+                </button>
+
+                <button data-anova="4">
+                    A3 · Descuentos
+                </button>
+
+            </div>
+
+            <div class="visor-anova">
+
+                <h3 id="anovaTitulo">
+                    A1. Ventas por categoría
+                </h3>
+
+                <span id="anovaEstado" class="estado">
+                    Diferencias significativas
+                </span>
+
+                <img
+                    id="anovaImagen"
+                    src="salida/anova_A1_Ventas_por_categoria.png"
+                    alt="Boxplot de ventas por categoría y Q-Q plot">
+
+                <div class="rejilla-dos">
+
+                    <div>
+                        <h3>¿Qué muestra el gráfico?</h3>
+                        <p id="anovaLectura"></p>
+                    </div>
+
+                    <div>
+                        <h3>¿Qué decisión apoyaría?</h3>
+                        <p id="anovaNegocio"></p>
+                    </div>
+
+                </div>
+
+                <div class="nota" id="anovaEstadistica"></div>
+
+            </div>
+
+            <div class="nota advertencia">
+                <strong>Limitación:</strong>
+                las pruebas se realizaron sobre líneas de venta.
+                Algunas pueden pertenecer al mismo pedido o cliente,
+                por lo que sus resultados deben interpretarse
+                como exploratorios y no como demostraciones causales.
+            </div>
+
+            <div class="guion">
+                <strong>Qué decir al profesor:</strong>
+                Power BI permite observar diferencias entre grupos,
+                mientras que ANOVA nos ayuda a evaluar
+                si las diferencias entre sus promedios
+                tienen respaldo estadístico.
+                Encontramos evidencia de diferencias entre categorías,
+                pero no entre regiones ni entre los grupos
+                de descuento estimado.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         ESTRUCTURA DEL PROYECTO
+    ========================================== -->
+
+    <section class="seccion" id="archivos">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">09 / Documentación técnica</span>
+
+            <h2 class="titulo-seccion">
+                Estructura y archivos del proyecto
+            </h2>
+
+            <p class="subtitulo">
+                El repositorio está organizado para separar
+                el código fuente, las fuentes de datos
+                y los resultados producidos por el procesamiento.
+            </p>
+
+            <div class="rejilla-dos">
+
+                <div class="tarjeta">
+
+                    <h3>Scripts y archivos principales</h3>
+
+                    <div id="archivosPrincipales"></div>
+
+                </div>
+
+                <div class="tarjeta">
+
+                    <h3>Fuentes y resultados</h3>
+
+                    <div id="archivosSalida"></div>
+
+                </div>
+
+            </div>
+
+            <h3 style="margin-top:45px">
+                Organización de carpetas
+            </h3>
+
+            <pre class="codigo"><code>Etl_final_herramientas/
+│
+├── etl_spark.py
+├── anova_ventas.py
+├── consultaPower.py
+├── Final.pbix
+├── index.html
+├── sales_data_sample.csv
+│
+├── fuentes/
+│   ├── clientes.db
+│   └── productos.json
+│
+├── salida/
+│   ├── ventas_limpio.csv
+│   ├── ventas_limpio_parquet/
+│   ├── dim_cliente.csv
+│   ├── dim_producto.csv
+│   ├── auditoria_calidad.csv
+│   ├── anova_resultados.csv
+│   ├── anova_A1_Ventas_por_categoria.png
+│   ├── anova_A1b_Log_ventas_por_categoria.png
+│   ├── anova_A2_Ventas_por_region.png
+│   ├── anova_A2b_Log_ventas_por_region.png
+│   ├── anova_A3_Cantidad_por_rango_de_descuento.png
+│   ├── tukey_A1_Ventas_por_categoria.csv
+│   └── tukey_A1b_Log_ventas_por_categoria.csv
+│
+└── venv/</code></pre>
+
+            <div class="nota">
+                <strong>Orden de ejecución:</strong>
+                primero se ejecuta
+                <code>python etl_spark.py</code>.
+                Después,
+                <code>python anova_ventas.py</code>.
+                El dashboard se desarrolla y consulta
+                mediante Power BI.
+            </div>
+
+            <div class="guion">
+                <strong>Qué decir al profesor:</strong>
+                Separar scripts, fuentes y resultados
+                facilita reproducir el proyecto.
+                Los archivos de salida constituyen
+                la evidencia del procesamiento ETL
+                y del análisis estadístico.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         CONCLUSIONES
+    ========================================== -->
+
+    <section class="seccion" id="conclusiones">
+
+        <div class="contenedor">
+
+            <span class="etiqueta">10 / Cierre</span>
+
+            <h2 class="titulo-seccion">
+                Conclusiones y decisiones empresariales
+            </h2>
+
+            <p class="subtitulo">
+                El proyecto demuestra cómo la integración de datos,
+                la inteligencia de negocios y la estadística
+                pueden utilizarse conjuntamente para analizar
+                problemas comerciales.
+            </p>
+
+            <div class="rejilla">
+
+                <div class="tarjeta">
+                    <h3>1. Gestión de productos</h3>
+                    <p>
+                        Las categorías presentan diferencias
+                        estadísticamente detectables en sus
+                        importes medios por línea.
+                        La empresa podría investigar estrategias
+                        específicas de inventario, precios
+                        y marketing por categoría.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>2. Mercados y regiones</h3>
+                    <p>
+                        Los países concentran distintos niveles
+                        de ventas totales. Sin embargo, ANOVA
+                        no encontró evidencia suficiente
+                        de diferencias en los importes medios
+                        por línea entre regiones.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>3. Precios y promociones</h3>
+                    <p>
+                        Los rangos de descuento estimado
+                        no muestran diferencias significativas
+                        en la cantidad media pedida.
+                        Antes de ampliar promociones,
+                        convendría realizar pruebas comerciales
+                        y evaluar márgenes reales.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="tarjeta" style="margin-top:25px">
+
+                <h3>Resultado general del proyecto</h3>
+
+                <p>
+                    Desarrollamos un proceso ETL reproducible,
+                    generamos archivos estructurados para análisis,
+                    construimos indicadores mediante DAX
+                    y aplicamos pruebas estadísticas para
+                    evaluar diferencias entre grupos.
+                </p>
+
+                <p>
+                    La principal contribución es integrar
+                    diferentes técnicas de análisis dentro
+                    de un mismo flujo de trabajo,
+                    desde los datos originales hasta
+                    las conclusiones empresariales.
+                </p>
+
+            </div>
+
+            <div class="guion">
+                <strong>Cómo cerrar la exposición:</strong>
+                Con este proyecto demostramos que no basta
+                con tener información comercial.
+                Es necesario depurarla, integrarla,
+                analizarla y evaluar cuidadosamente
+                las conclusiones antes de utilizarla
+                para orientar decisiones empresariales.
+            </div>
+
+        </div>
+    </section>
+
+    <!-- =========================================
+         FOOTER
+    ========================================== -->
+
+    <footer>
+
+        <div class="contenedor">
+
+            <strong>
+                Proyecto Final · Análisis de Ventas Retail Multinacional
+            </strong>
+
+            <p>
+                Python · PySpark · Pandas · SQLite · JSON ·
+                Power BI · DAX · ANOVA
+            </p>
+
+            <p>
+                Dataset: Sample Sales Data ·
+                Período histórico 2003–2005
+            </p>
+
+        </div>
+
+    </footer>
+
+    <!-- =========================================
+         JAVASCRIPT
+    ========================================== -->
+
+    <script>
+
+        // --------------------------------------
+        // MODO EXPOSICIÓN
+        // --------------------------------------
+
+        const botonExposicion =
+            document.getElementById("activarExposicion");
+
+        botonExposicion.addEventListener("click", function () {
+
+            document.body.classList.toggle("modo-exposicion");
+
+            const activo =
+                document.body.classList.contains("modo-exposicion");
+
+            botonExposicion.textContent = activo
+                ? "Desactivar modo exposición"
+                : "Activar modo exposición";
+        });
+
+
+        // --------------------------------------
+        // CONTENIDO DE LOS CINCO ANÁLISIS ANOVA
+        // --------------------------------------
+
+        const analisisANOVA = [
+
+            {
+                titulo: "A1. Ventas por categoría de producto",
+
+                imagen: "salida/anova_A1_Ventas_por_categoria.png",
+
+                estado: "Diferencias significativas",
+
+                significativo: true,
+
+                lectura:
+                    "El boxplot muestra distribuciones diferentes " +
+                    "entre las siete categorías. Classic Cars presenta " +
+                    "importes centrales superiores a Trains y existen " +
+                    "ventas atípicas de importes elevados. " +
+                    "El Q-Q muestra una desviación marcada de normalidad " +
+                    "en los residuos de las ventas originales.",
+
+                negocio:
+                    "Las diferencias entre categorías justifican " +
+                    "investigar estrategias comerciales específicas. " +
+                    "La empresa podría estudiar inventario, demanda, " +
+                    "precios y rentabilidad antes de decidir " +
+                    "qué categorías priorizar.",
+
+                estadistica:
+                    "ANOVA: p ≈ 1,377 × 10⁻²⁸. " +
+                    "Se encontró evidencia de diferencias entre " +
+                    "las medias por categoría. " +
+                    "Eta cuadrado ≈ 0,0509."
+            },
+
+            {
+                titulo: "A1b. Logaritmo de ventas por categoría",
+
+                imagen:
+                    "salida/anova_A1b_Log_ventas_por_categoria.png",
+
+                estado: "Diferencias significativas",
+
+                significativo: true,
+
+                lectura:
+                    "El logaritmo reduce la influencia relativa de " +
+                    "las ventas extraordinariamente elevadas. " +
+                    "Las cajas conservan diferencias entre categorías " +
+                    "y el Q-Q se aproxima más a la línea de normalidad, " +
+                    "aunque persisten algunas desviaciones.",
+
+                negocio:
+                    "Este análisis permite comprobar si la conclusión " +
+                    "general sobre categorías permanece cuando se reduce " +
+                    "la influencia relativa de importes extremos. " +
+                    "Las diferencias siguen siendo estadísticamente " +
+                    "detectables en la escala transformada.",
+
+                estadistica:
+                    "ANOVA sobre LOG_SALES: p ≈ 3,507 × 10⁻²⁵. " +
+                    "La conclusión de diferencias entre categorías " +
+                    "se mantiene en la escala logarítmica."
+            },
+
+            {
+                titulo: "A2. Ventas por región",
+
+                imagen:
+                    "salida/anova_A2_Ventas_por_region.png",
+
+                estado: "Sin evidencia suficiente de diferencias",
+
+                significativo: false,
+
+                lectura:
+                    "Las cajas de APAC, EMEA, Japón y Norteamérica " +
+                    "están ampliamente superpuestas. Sus medianas " +
+                    "son relativamente próximas. " +
+                    "El Q-Q muestra una fuerte desviación de normalidad, " +
+                    "especialmente en los residuos positivos más elevados.",
+
+                negocio:
+                    "El análisis no proporciona evidencia suficiente " +
+                    "para justificar políticas regionales diferentes " +
+                    "basándose únicamente en el importe medio por línea. " +
+                    "La empresa debería estudiar también ingresos totales, " +
+                    "costos, cantidad de clientes y composición de productos.",
+
+                estadistica:
+                    "ANOVA: p ≈ 0,2645. " +
+                    "No se rechaza la hipótesis de igualdad " +
+                    "de medias regionales."
+            },
+
+            {
+                titulo: "A2b. Logaritmo de ventas por región",
+
+                imagen:
+                    "salida/anova_A2b_Log_ventas_por_region.png",
+
+                estado: "Sin evidencia suficiente de diferencias",
+
+                significativo: false,
+
+                lectura:
+                    "Los valores centrales de los cuatro grupos " +
+                    "continúan siendo semejantes. " +
+                    "El Q-Q de los residuos mejora respecto " +
+                    "al de ventas originales, pero conserva " +
+                    "ciertas desviaciones en las colas.",
+
+                negocio:
+                    "El cambio de escala no modifica la conclusión " +
+                    "principal: no encontramos evidencia suficiente " +
+                    "de diferencias entre las medias regionales " +
+                    "analizadas. Esto no significa que los mercados " +
+                    "tengan iguales ventas totales o rentabilidad.",
+
+                estadistica:
+                    "ANOVA sobre LOG_SALES: p ≈ 0,2809. " +
+                    "Resultado no significativo al nivel de 0,05."
+            },
+
+            {
+                titulo:
+                    "A3. Cantidad pedida por rango de descuento estimado",
+
+                imagen:
+                    "salida/anova_A3_Cantidad_por_rango_de_descuento.png",
+
+                estado: "Sin evidencia suficiente de diferencias",
+
+                significativo: false,
+
+                lectura:
+                    "Las seis cajas muestran cantidades centrales " +
+                    "muy parecidas, con medianas cercanas " +
+                    "a 34 o 35 unidades. " +
+                    "El Q-Q presenta desviaciones en los extremos " +
+                    "y algunos registros de cantidades elevadas.",
+
+                negocio:
+                    "No se encontró evidencia suficiente " +
+                    "de diferencias en las cantidades medias " +
+                    "entre rangos de descuento estimado. " +
+                    "La empresa no debería interpretar esto " +
+                    "como prueba de que las promociones no funcionan. " +
+                    "Para medir su efecto real se necesitarían " +
+                    "datos promocionales o un experimento.",
+
+                estadistica:
+                    "ANOVA: p ≈ 0,2486. " +
+                    "No se encontraron diferencias significativas " +
+                    "entre las cantidades medias de los grupos."
+            }
+
+        ];
+
+
+        // --------------------------------------
+        // CAMBIAR GRÁFICO ANOVA
+        // --------------------------------------
+
+        function mostrarANOVA(indice) {
+
+            const analisis = analisisANOVA[indice];
+
+            document.getElementById("anovaTitulo").textContent =
+                analisis.titulo;
+
+            const imagen =
+                document.getElementById("anovaImagen");
+
+            imagen.src = analisis.imagen;
+            imagen.alt = analisis.titulo;
+
+            const estado =
+                document.getElementById("anovaEstado");
+
+            estado.textContent = analisis.estado;
+
+            estado.className = analisis.significativo
+                ? "estado"
+                : "estado neutro";
+
+            document.getElementById("anovaLectura").textContent =
+                analisis.lectura;
+
+            document.getElementById("anovaNegocio").textContent =
+                analisis.negocio;
+
+            document.getElementById("anovaEstadistica").textContent =
+                analisis.estadistica;
+
+            document.querySelectorAll("[data-anova]")
+                .forEach(function (boton) {
+
+                    const seleccionado =
+                        Number(boton.dataset.anova) === indice;
+
+                    boton.classList.toggle(
+                        "activo",
+                        seleccionado
+                    );
+                });
+        }
+
+        document.querySelectorAll("[data-anova]")
+            .forEach(function (boton) {
+
+                boton.addEventListener("click", function () {
+                    mostrarANOVA(Number(boton.dataset.anova));
+                });
+            });
+
+        mostrarANOVA(0);
+
+
+        // --------------------------------------
+        // INVENTARIO DE ARCHIVOS
+        // --------------------------------------
+
+        const principales = [
+
+            {
+                extension: "PY",
+                nombre: "etl_spark.py",
+                descripcion:
+                    "Script principal del ETL. Prepara fuentes, " +
+                    "extrae datos, ejecuta transformaciones en Spark, " +
+                    "valida los resultados y exporta archivos."
+            },
+
+            {
+                extension: "PY",
+                nombre: "anova_ventas.py",
+                descripcion:
+                    "Ejecuta las pruebas ANOVA, calcula resultados " +
+                    "estadísticos, verifica supuestos y genera " +
+                    "los gráficos y comparaciones de Tukey."
+            },
+
+            {
+                extension: "PY",
+                nombre: "consultaPower.py",
+                descripcion:
+                    "Utiliza PBIXRay para inspeccionar el archivo " +
+                    "Power BI: tablas, relaciones, medidas DAX " +
+                    "y consultas Power Query M."
+            },
+
+            {
+                extension: "PBIX",
+                nombre: "Final.pbix",
+                descripcion:
+                    "Informe de Power BI que contiene el modelo, " +
+                    "las medidas DAX y las visualizaciones " +
+                    "de los requerimientos analíticos."
+            },
+
+            {
+                extension: "CSV",
+                nombre: "sales_data_sample.csv",
+                descripcion:
+                    "Dataset original con 2.823 líneas de venta. " +
+                    "Es la fuente primaria del proyecto."
+            },
+
+            {
+                extension: "HTML",
+                nombre: "index.html",
+                descripcion:
+                    "Portal web de presentación del proyecto, " +
+                    "que incorpora el dashboard, las explicaciones " +
+                    "y los gráficos estadísticos."
+            },
+
+            {
+                extension: "ENV",
+                nombre: "venv/",
+                descripcion:
+                    "Entorno virtual de Python que contiene " +
+                    "las dependencias necesarias para ejecutar " +
+                    "los scripts."
+            }
+        ];
+
+
+        const salidas = [
+
+            {
+                extension: "DB",
+                nombre: "fuentes/clientes.db",
+                descripcion:
+                    "Base de datos SQLite que contiene " +
+                    "la información descriptiva de los clientes."
+            },
+
+            {
+                extension: "JSON",
+                nombre: "fuentes/productos.json",
+                descripcion:
+                    "Catálogo de productos preparado desde el CSV, " +
+                    "con códigos, categorías originales y MSRP."
+            },
+
+            {
+                extension: "CSV",
+                nombre: "salida/ventas_limpio.csv",
+                descripcion:
+                    "Tabla integrada de ventas, clientes y productos, " +
+                    "con 2.763 líneas finales."
+            },
+
+            {
+                extension: "PARQUET",
+                nombre: "salida/ventas_limpio_parquet/",
+                descripcion:
+                    "Salida del ETL en formato columnar Parquet, " +
+                    "apropiada para procesamiento con Spark."
+            },
+
+            {
+                extension: "CSV",
+                nombre: "salida/dim_producto.csv",
+                descripcion:
+                    "Dimensión de productos para el modelo " +
+                    "analítico en Power BI."
+            },
+
+            {
+                extension: "CSV",
+                nombre: "salida/dim_cliente.csv",
+                descripcion:
+                    "Dimensión de clientes con atributos " +
+                    "geográficos y comerciales."
+            },
+
+            {
+                extension: "CSV",
+                nombre: "salida/auditoria_calidad.csv",
+                descripcion:
+                    "Reporte de calidad con cantidades de filas, " +
+                    "duplicados, exclusiones y controles " +
+                    "del procesamiento."
+            },
+
+            {
+                extension: "CSV",
+                nombre: "salida/anova_resultados.csv",
+                descripcion:
+                    "Resumen estadístico de las cinco pruebas " +
+                    "ANOVA y sus resultados."
+            },
+
+            {
+                extension: "PNG",
+                nombre: "salida/anova_A1_Ventas_por_categoria.png",
+                descripcion:
+                    "Boxplot de ventas por categoría y Q-Q de residuos."
+            },
+
+            {
+                extension: "PNG",
+                nombre: "salida/anova_A1b_Log_ventas_por_categoria.png",
+                descripcion:
+                    "Análisis de ventas por categoría " +
+                    "utilizando escala logarítmica."
+            },
+
+            {
+                extension: "PNG",
+                nombre: "salida/anova_A2_Ventas_por_region.png",
+                descripcion:
+                    "Distribución de ventas por región " +
+                    "y comprobación visual de residuos."
+            },
+
+            {
+                extension: "PNG",
+                nombre: "salida/anova_A2b_Log_ventas_por_region.png",
+                descripcion:
+                    "Análisis regional de ventas " +
+                    "en escala logarítmica."
+            },
+
+            {
+                extension: "PNG",
+                nombre: "salida/anova_A3_Cantidad_por_rango_de_descuento.png",
+                descripcion:
+                    "Comparación de cantidades pedidas " +
+                    "entre rangos de descuento estimado."
+            },
+
+            {
+                extension: "CSV",
+                nombre: "salida/tukey_A1_Ventas_por_categoria.csv",
+                descripcion:
+                    "Comparaciones entre pares de categorías " +
+                    "después de ANOVA sobre ventas originales."
+            },
+
+            {
+                extension: "CSV",
+                nombre: "salida/tukey_A1b_Log_ventas_por_categoria.csv",
+                descripcion:
+                    "Comparaciones entre pares de categorías " +
+                    "sobre ventas transformadas mediante logaritmos."
+            }
+
+        ];
+
+
+        // --------------------------------------
+        // MOSTRAR INVENTARIO
+        // --------------------------------------
+
+        function mostrarArchivos(contenedor, archivos) {
+
+            const elemento =
+                document.getElementById(contenedor);
+
+            archivos.forEach(function (archivo) {
+
+                const fila = document.createElement("div");
+                fila.className = "archivo";
+
+                const extension = document.createElement("span");
+                extension.className = "extension";
+                extension.textContent = archivo.extension;
+
+                const contenido = document.createElement("div");
+
+                const titulo = document.createElement("strong");
+                titulo.textContent = archivo.nombre;
+
+                const descripcion = document.createElement("p");
+                descripcion.textContent = archivo.descripcion;
+
+                contenido.appendChild(titulo);
+                contenido.appendChild(descripcion);
+
+                fila.appendChild(extension);
+                fila.appendChild(contenido);
+
+                elemento.appendChild(fila);
+            });
+        }
+
+        mostrarArchivos("archivosPrincipales", principales);
+        mostrarArchivos("archivosSalida", salidas);
+
+    </script>
+
 </body>
 </html>
